@@ -26,7 +26,7 @@ At the end of the this hands-on training, students will be able to;
 
 - Part 3 - Write a Simple Hello World Web Application with Jinja template on GitHub Repo
 
-- Part 4 - Install Python and Flask framework on Amazon Linux 2 EC2 Instance
+- Part 4 - Install Python and Flask framework on Amazon Linux 2023 EC2 Instance
 
 ## Part 1 - Getting to know the Python Flask framework
 
@@ -72,9 +72,9 @@ Followings are some of features of Flask Framework;
 
 - run the application in debug mode
 
-- Connect the Hello World application from the web browser with `localhost:5000` or `127.0.0.1:5000`
+- Connect the Hello World application from the web browser with `localhost:30000` or `127.0.0.1:30000`
 
-- to reach application from anywhere on port 80, change debug mode
+- to reach application from anywhere on port 8081, change debug mode
 
 - Save the complete code as `hello-world-app.py` file under `hands-on/flask-01-02-hello-world-app-Jinja-Template/flask-01-hello-world-app` folder.
 
@@ -103,7 +103,7 @@ Followings are some of features of Flask Framework;
 
 - run the application in debug mode
 
-- Connect the Hello World application from the web browser with `localhost:5000` or `127.0.0.1:5000`
+- Connect the Hello World application from the web browser with `localhost:30000` or `127.0.0.1:30000`
 
 - Save the complete code as `jinja.py` file under `flask-02-Jinja_Template` folder.
 
@@ -113,7 +113,7 @@ Followings are some of features of Flask Framework;
 
 ## Part 4 - Run the Hello World App on EC2 Instance
 
-- Launch an Amazon EC2 instance using the Amazon Linux 2 AMI with security group allowing SSH (Port 22) and HTTP (Port 80) connections.
+- Launch an Amazon EC2 instance using the Amazon Linux 2023 AMI with security group allowing SSH (Port 22), HTTP (Port 80), Port (8081) connections.
 
 - Connect to your instance with SSH.
 
