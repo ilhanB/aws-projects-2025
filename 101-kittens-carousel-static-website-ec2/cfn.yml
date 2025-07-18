@@ -17,15 +17,13 @@ Resources:
       InstanceType: t3.small
       KeyName: firstkey
       SecurityGroupIds: 
-        - sg-079f90b53cac8eb62
-      SecurityGroups: 
         - "String"!Ref mySecGrp
       Tags: 
         - Key: Name
-          Value: kittens-ssh-http
+          Value: !Sub Web Server of ${AWS::StackName} Stack
       UserData: "String"
       UserData: 
-        Fn::Base64: !Sub |
+        Fn::Base64: |
           #!/bin/bash
           dnf update -y
           dnf install httpd -y
@@ -59,7 +57,7 @@ Resources:
 
 Outputs:
   webSiteURL:
-    Description: URL of website
     Value: !Sub
-      - 
-      - 
+      - http://${PublicAddress}
+      - PublicAddress: !GetAtt WebServerHost.PublicDnsName
+    Description: Kittens Carousel Application URL
