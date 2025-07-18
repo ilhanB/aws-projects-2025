@@ -11,10 +11,51 @@ Parameters:
 Resources: 
   
   myWebServer:
-    
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0150ccaf51ab55a51
+      InstanceType: t3.small
+      KeyName: firstkey
+      SecurityGroupIds: 
+        - sg-079f90b53cac8eb62
+      SecurityGroups: 
+        - "String"!Ref mySecGrp
+      Tags: 
+        - Key: Name
+          Value: kittens-ssh-http
+      UserData: "String"
+      UserData: 
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          dnf update -y
+          dnf install httpd -y
+          systemctl start httpd
+          systemctl enable httpd
+          cd /var/www/html
+          FOLDER="https://raw.githubusercontent.com/ilhanB/aws-projects-2025/refs/heads/main/101-kittens-carousel-static-website-ec2/static-web"
+          wget ${FOLDER}/index.html
+          wget ${FOLDER}/cat0.jpg
+          wget ${FOLDER}/cat1.jpg
+          wget ${FOLDER}/cat2.jpg
 
   mySecGrp:
-    
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "allow ssh and http" # Required
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags: 
+        - Key: "Name"
+          Value: "kittens"
+        - Key: "cohort"
+          Value: "19"      
 
 Outputs:
   webSiteURL:
@@ -22,4 +63,3 @@ Outputs:
     Value: !Sub
       - 
       - 
-   
