@@ -6,10 +6,7 @@ Description: |
   security group which allows http connections on port 80 and ssh port 22 from anywhere. Kittens Carousel Static Website
   is downloaded from my Public Github repository, then deployed on Apache Web Server.
 
-Parameters:
-  
 Resources: 
-  
   myWebServer:
     Type: AWS::EC2::Instance
     Properties:
@@ -49,11 +46,11 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-      Tags: 
-        - Key: "Name"
-          Value: "kittens"
-        - Key: "cohort"
-          Value: "19"      
+       Tags: 
+         - Key: "Name"
+           Value: "kittens"
+         - Key: "cohort"
+           Value: "19"      
 
 Outputs:
   webSiteURL:
