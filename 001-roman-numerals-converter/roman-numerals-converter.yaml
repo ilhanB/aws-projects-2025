@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: | 
+  Cloud Formation Template for Roman Numerals Converter Application. This template creates Python Flask Web Application with AWS Linux 3 AMI, installs required packages, and deploys the application.
+  
+Parameters:
+  KeyName:
+    Description: Coose the Key Pair for the EC2 Instance.
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: firstkey
+
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
+
+Resources:
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow 22 and 80 port # Required
+      SecurityGroupIngress: 
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+
+  WebServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: t3.micro
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref WebSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub Web server of ${AWS::StackName}
+      UserData: !Base64 | 
+        #!/bin/bash
+        dnf update -y
+        dnf install -y python3 python3-pip git wget
+        pip3 install flask
+        cd /home/ec2-user
+        wget -P templates https://raw.githubusercontent.com/ilhanB/aws-projects-2025/refs/heads/main/001-roman-numerals-converter/templates/index.html
+        wget -P templates https://raw.githubusercontent.com/ilhanB/aws-projects-2025/refs/heads/main/001-roman-numerals-converter/templates/result.html
+        wget https://raw.githubusercontent.com/ilhanB/aws-projects-2025/refs/heads/main/001-roman-numerals-converter/roman-numerals-converter-app.py
+        python3 roman-numerals-converter-app.py
+
+Outputs:
+  WebSiteURL:
+    Description: Application URL
+    Value: !Sub "http://${WebServer.PublicDnsName}"
