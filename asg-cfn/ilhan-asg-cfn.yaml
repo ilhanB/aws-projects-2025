@@ -1,0 +1,175 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: |
+  This template create ASG and ALB with ASG Target Tracking Policy via CloudFormation template.
+
+Parameters:
+  myVPC:
+    Description: Choose your VPC
+    Type: AWS::EC2::VPC::Id 
+
+  myEnv:
+    Description: Choose your environment
+    Type: String
+    Default: prod
+    AllowedValues:
+      - prod
+      - test
+
+  myInstanceType:
+    Description: Choose your instance type
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t2.micro
+  
+  myKeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+
+  mySubnets:
+    Description: Choose your subnets
+    Type: List<AWS::EC2::Subnet::Id>
+
+
+Mappings:
+  myRegionImageMap:
+    us-east-1:
+      prod: ami-00ca32bbc84273381  # Example AMI for us-east-1      
+      test: ami-0a232144cf20a27a5  # Example AMI for us-east-1
+    us-east-2:
+      prod: ami-0b016c703b95ecbe4  # Example AMI for us-west-2
+      test: ami-0329ba0ced0243e2b
+    us-west-1:
+      prod: ami-0945610b37068d87a
+      test: ami-0fa3a4915333e2850
+
+Resources:
+  mySecGrp:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow ssh and http access
+      VpcId: !Ref myVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  myTargetGrp:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref myVPC
+  
+  myLT:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:        
+        ImageId: !FindInMap
+          - myRegionImageMap
+          - !Ref "AWS::Region"
+          - !Ref myEnv
+        InstanceType: !Ref myInstanceType
+        KeyName: !Ref myKeyName
+        SecurityGroupIds: 
+          - !Ref mySecGrp
+        UserData: !Base64 |
+          #!/bin/bash 
+          #update os
+          dnf update -y
+          #install apache server
+          dnf install -y httpd
+          # get private ip address of ec2 instance using instance metadata
+          TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"` \
+          && PRIVATE_IP=`curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4`
+          # get public ip address of ec2 instance using instance metadata
+          TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"` \
+          && PUBLIC_IP=`curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4` 
+          # get date and time of server
+          DATE_TIME=`date`
+          # set all permissions
+          chmod -R 777 /var/www/html
+          # create a custom index.html file
+          echo "<html>
+          <head>
+              <title> Congratulations! You have created an instance from Launch Template</title>
+          </head>
+          <body>
+              <h1>This web server is launched from launch template by ilhan</h1>
+              <p>This instance is created at <b>$DATE_TIME</b></p>
+              <p>Private IP address of this instance is <b>$PRIVATE_IP</b></p>
+              <p>Public IP address of this instance is <b>$PUBLIC_IP</b></p>
+          </body>
+          </html>" > /var/www/html/index.html
+          # start apache server
+          systemctl start httpd
+          systemctl enable httpd
+
+  myALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: ilhan-app-alb
+      SecurityGroups: 
+        - !Ref mySecGrp 
+      Subnets: !Ref mySubnets
+      Type: application
+
+  myListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions: # Required
+        - Type: forward
+          TargetGroupArn: !GetAtt myTargetGrp.TargetGroupArn
+      LoadBalancerArn: !GetAtt myALB.LoadBalancerArn
+      Port: 80
+      Protocol: HTTP   
+
+  myASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: ilhan-asg
+      DesiredCapacity: 2
+      HealthCheckGracePeriod: 300
+      HealthCheckType: ELB
+      LaunchTemplate:
+        LaunchTemplateId: !GetAtt myLT.LaunchTemplateId
+        Version: !GetAtt myLT.DefaultVersionNumber
+      MaxSize: 3
+      MinSize: 2
+      VPCZoneIdentifier: !Ref mySubnets
+      TargetGroupARNs:
+        - !GetAtt myTargetGrp.TargetGroupArn
+        
+  myASGPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref myASG # Required
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 60
+
+Outputs:
+  showDNSName:
+    Description: DNS name of the ALB
+    Value: !Join
+      - ''
+      - 
+        - 'http://'
+        - !GetAtt myALB.DNSName
