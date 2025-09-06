@@ -1,8 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 from flask import Flask
-from flask_mysqldb import MySQL
-
+from flaskext.mysql import MySQL
 import json
 from flask import request, render_template
 
