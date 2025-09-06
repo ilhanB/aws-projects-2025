@@ -1,18 +1,18 @@
 # Import Flask modules
 from flask import Flask, render_template, request
-from flask_mysqldb import MySQL
+from flaskext.mysql import MySQL
 
 
 # Create an object named app
 app = Flask(__name__)
 
 # Configure mysql database
-app.config['MYSQL_HOST'] = 'ilhan-aws.cb6fiwpgjrwq.us-east-1.rds.amazonaws.com'
-app.config['MYSQL_USER'] = 'admin'
-app.config['MYSQL_PASSWORD'] = 'Clarusway_1'
-app.config['MYSQL_DB'] = 'clarusway'
-app.config['MYSQL_PORT'] = 3306
-mysql = MySQL(app)
+app.config['MYSQL_DATABASE_HOST'] = 'ilhan-aws.cb6fiwpgjrwq.us-east-1.rds.amazonaws.com'
+app.config['MYSQL_DATABASE_USER'] = 'admin'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'Clarusway_1'
+app.config['MYSQL_DATABASE_DB'] = 'clarusway'
+app.config['MYSQL_DATABASE_PORT'] = 3306
+mysql = MySQL()
 mysql.init_app(app)
 connection = mysql.connect()
 connection.autocommit(True)
